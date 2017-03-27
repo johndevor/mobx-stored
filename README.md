@@ -6,30 +6,28 @@ a library giving you persistent observable variables. Not only they persist trou
 import storedObservable from 'mobx-stored'
 
 const defaultUser = {email: null, firstname: null, lastname: null}
-const observableUserProfile = storedObservable('userProfile', defaultUser, 500)   // last parameter is optional-miliseconds how often do you want to save into localStorage. It is advised to use bigger value with bigger stores
+// last parameter is optional-miliseconds how often do you want to save into
+// localStorage. It is advised to use bigger value with bigger stores
+const observableUserProfile = storedObservable('userProfile', defaultUser, 500)   
 
 // now any changes made to the observableUserProfile are synced in localStorage
-
 observableUserProfile.name = 'Michael'
 
 // after 500ms and reloading the page
-
 observableUserProfile.name === 'Michael' // true
 
 // revert to the default values
-
 observableUserProfile.reset()
 
 //Don't need it anymore?
-
 observableUserProfile.dispose()
 ```
 
-Also it is smart enough not to serialize getters(computeds) so if you have 
+Also it is smart enough not to serialize getters(computeds) so if you have
 
 ```javascript
 const defaultUser = {
-  firstname: null, 
+  firstname: null,
   lastname: null,
   get name () {
     return this.firstname + this.lastname

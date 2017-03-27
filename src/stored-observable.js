@@ -4,47 +4,83 @@ import merge from 'lodash.merge'
 import cloneDeep from 'lodash.clonedeep'
 import omit from 'lodash.omit'
 import findGetters from './find-getters'
+import cookie from 'react-cookie'
+import listenCookieChange from './listen-cookie-change'
 
-function storedObservable (key, defaultValue, debounce = 500) {
-  let fromStorage = localStorage.getItem(key)
+function storedObservable (key, defaultValue, debounce = 500, syncTabs = true,
+  asCookie = false) {
+
+  // Add session option
+  //    1. Add boolean flag to signify session option √
+  //    2. If asCookie, do server/client-side retrieval using react-cookies √
+  //    3. Make cross-tab syncing optional √
+  //    4. If asCookie, use listen-cookie-change to do cross-tab syncing √
+  //    5. Throw error if cookie size is too large
+  //    6. Update to allow for different kinds of objects
+
+
+  // const getCookie = (typeof window != 'undefined') ? Cookies.getJSON :
+
+  if (!asCookie && typeof localStorage == 'undefined') {
+    throw "Error: cannot load from localStorage on the server. Did you mean to set the \'asCookie\' option?"
+  }
+
+  let fromStorage = asCookie ? cookie.load(key) : JSON.parse(localStorage.getItem(key))
   const getterPaths = findGetters(defaultValue)
-  const defaultClone = cloneDeep(defaultValue)  // we don't want to modify the given object, because userscript might want to use the original object to reset the state back to default values some time later
+  // we don't want to modify the given object, because userscript might want to
+  // use the original object to reset the state back to default values some time later
+  const defaultClone = cloneDeep(defaultValue)
   if (fromStorage) {
-    merge(defaultClone, JSON.parse(fromStorage))
+    merge(defaultClone, fromStorage)
   }
   const getStateWithoutComputeds = () => {
     return omit(obsVal, getterPaths)
   }
   const obsVal = observable(defaultClone)
+
   let disposeAutorun
   const establishAutorun = () => {
     disposeAutorun = autorunAsync(() => {
-      localStorage.setItem(key, JSON.stringify(getStateWithoutComputeds()))
+      if (asCookie)
+        cookie.save(key, JSON.stringify(getStateWithoutComputeds()))
+      else
+        localStorage.setItem(key, JSON.stringify(getStateWithoutComputeds()))
     }, debounce)
   }
   establishAutorun()
 
-  const propagateChanges = (e) => {
-    if (e.key === key) {
-      disposeAutorun()
-      const newValue = JSON.parse(e.newValue)
-      extendObservable(obsVal, newValue)
-
-      establishAutorun()
+  // Sync across tabs & windows
+  if (syncTabs) {
+    const propagateChanges = (e) => {
+      if (e.key === key) {
+        disposeAutorun()
+        console.log(e.newValue)
+        const newValue = (typeof e.newValue === 'object') ? e.newValue : JSON.parse(e.newValue)
+        extendObservable(obsVal, newValue)
+        establishAutorun()
+      }
+    }
+    if (asCookie) {
+      listenCookieChange(key, propagateChanges)
+    }
+    else {
+      window.addEventListener('storage', propagateChanges)
     }
   }
-  window.addEventListener('storage', propagateChanges)
 
   obsVal.reset = () => {
     extendObservable(obsVal, defaultValue)
   }
   obsVal.dispose = () => {
     disposeAutorun()
-    localStorage.removeItem(key)
+    if (asCookie)
+      cookie.remove(key)
+    else
+      localStorage.removeItem(key)
     window.removeEventListener(propagateChanges)
+    // XXX Need to remove the cookie change listener
   }
   return obsVal
 }
 
 export default storedObservable
-

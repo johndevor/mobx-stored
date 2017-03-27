@@ -48,9 +48,11 @@
     "babel": "inherit"
   },
   "dependencies": {
+    "react-cookie": "^1.0.4",
     "lodash.clonedeep": "^4.5.0",
     "lodash.merge": "^4.6.0",
     "lodash.omit": "^4.5.0",
+    "lodash.isequal": "^4.5.0",
     "traverse": "^0.6.6"
   },
   "standard": {
