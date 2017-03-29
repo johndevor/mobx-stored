@@ -47,4 +47,4 @@ Simply set the true flag for the last variable to enable this mode.
 const observableUserProfile = storedObservable('userProfile', defaultUser, 500, true)   
 ```
 
-Works great with react-cookie to achieve Server Side Rendering.
+Works great with [react-cookie](https://github.com/reactivestack/react-cookie) to achieve Server Side Rendering.
