@@ -38,6 +38,13 @@ const defaultUser = {
 name property won't be serialized into localStorage
 
 ### using cookies
+
+Additionally, you have the option to store the variable as a cookie. Note, this method uses a 100ms polling-timer setup to sync between tabs.
+
+Simply set the true flag for the last variable to enable this mode.
+
 ```javascript
-Additionally, you have the option to store the variable as a cookie. Note, this method uses a 100ms polling-timer setup to sync between tabs. 
+const observableUserProfile = storedObservable('userProfile', defaultUser, 500, true)   
 ```
+
+Works great with react-cookie to achieve Server Side Rendering.
