@@ -5,19 +5,16 @@ import cloneDeep from 'lodash.clonedeep'
 import omit from 'lodash.omit'
 import findGetters from './find-getters'
 import cookie from 'react-cookie'
-import listenCookieChange from './listen-cookie-change'
+import { listenCookieChange, stopListenCookieChange } from './listen-cookie-change'
 
-function storedObservable (key, defaultValue, debounce = 500, syncTabs = true,
-  asCookie = false) {
+function storedObservable (key, defaultValue, debounce = 500, asCookie = false) {
 
   // Add session option
   //    1. Add boolean flag to signify session option √
   //    2. If asCookie, do server/client-side retrieval using react-cookies √
-  //    3. Make cross-tab syncing optional √
-  //    4. If asCookie, use listen-cookie-change to do cross-tab syncing √
-  //    5. Throw error if cookie size is too large
-  //    6. Update to allow for different kinds of objects
-
+  //    3. If asCookie, use listen-cookie-change to do cross-tab syncing √
+  //    4. Throw error if cookie size is too large
+  //    5. Update to allow for different kinds of objects
 
   // const getCookie = (typeof window != 'undefined') ? Cookies.getJSON :
 
@@ -50,22 +47,20 @@ function storedObservable (key, defaultValue, debounce = 500, syncTabs = true,
   establishAutorun()
 
   // Sync across tabs & windows
-  if (syncTabs) {
-    const propagateChanges = (e) => {
-      if (e.key === key) {
-        disposeAutorun()
-        console.log(e.newValue)
-        const newValue = (typeof e.newValue === 'object') ? e.newValue : JSON.parse(e.newValue)
-        extendObservable(obsVal, newValue)
-        establishAutorun()
-      }
+  const propagateChanges = (e) => {
+    if (e.key === key) {
+      disposeAutorun()
+      console.log(e.newValue)
+      const newValue = (typeof e.newValue === 'object') ? e.newValue : JSON.parse(e.newValue)
+      extendObservable(obsVal, newValue)
+      establishAutorun()
     }
-    if (asCookie) {
-      listenCookieChange(key, propagateChanges)
-    }
-    else {
-      window.addEventListener('storage', propagateChanges)
-    }
+  }
+  if (asCookie) {
+    listenCookieChange(key, propagateChanges)
+  }
+  else {
+    window.addEventListener('storage', propagateChanges)
   }
 
   obsVal.reset = () => {
@@ -73,12 +68,14 @@ function storedObservable (key, defaultValue, debounce = 500, syncTabs = true,
   }
   obsVal.dispose = () => {
     disposeAutorun()
-    if (asCookie)
+    if (asCookie) {
       cookie.remove(key)
-    else
+      stopListenCookieChange(key)
+    }
+    else {
       localStorage.removeItem(key)
-    window.removeEventListener(propagateChanges)
-    // XXX Need to remove the cookie change listener
+      window.removeEventListener(propagateChanges)
+    }
   }
   return obsVal
 }

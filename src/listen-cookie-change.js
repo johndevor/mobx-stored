@@ -11,11 +11,12 @@ import isEqual from 'lodash.isequal'
 
 var cookieRegistry = []
 
-function listenCookieChange(cookieName, callback) {
+export function listenCookieChange(cookieName, callback) {
   setInterval(function() {
     if (cookieRegistry[cookieName]) {
       if (!isEqual(cookie.load(cookieName), cookieRegistry[cookieName])) {
         // update registry so we dont get triggered again
+        console.log('New cookie value set', cookie.load(cookieName))
         cookieRegistry[cookieName] = cookie.load(cookieName)
         return callback({ key: cookieName, newValue: cookie.load(cookieName) })
       }
@@ -25,4 +26,6 @@ function listenCookieChange(cookieName, callback) {
   }, 100)
 }
 
-export default listenCookieChange
+export function stopListenCookieChange(cookieName) {
+  delete cookieRegistry[cookieName]
+}

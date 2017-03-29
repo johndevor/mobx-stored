@@ -36,3 +36,8 @@ const defaultUser = {
 ```
 
 name property won't be serialized into localStorage
+
+### using cookies
+```javascript
+Additionally, you have the option to store the variable as a cookie. Note, this method uses a 100ms polling-timer setup to sync between tabs. 
+```
